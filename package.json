@@ -1,0 +1,28 @@
+{
+  "name": "atrium-dashboard",
+  "version": "0.1.0",
+  "description": "Atrium — a component-based Home Assistant dashboard strategy. Composes rooms, music (Music Assistant Conductor), whole-house widgets and per-floor tabs dynamically from the HA area/floor/entity registries.",
+  "type": "module",
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "home-assistant",
+    "lovelace",
+    "dashboard-strategy",
+    "music-assistant",
+    "atrium"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "custom-card-helpers": "^1.9.0",
+    "esbuild": "^0.28.0",
+    "jsdom": "^25.0.1",
+    "typescript": "^5.6.0",
+    "vitest": "^4.1.11"
+  }
+}
