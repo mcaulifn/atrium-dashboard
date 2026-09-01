@@ -1,5 +1,6 @@
 import type { AtriumComponent } from "../types";
 import { attentionComponent } from "./attention";
+import { cardComponent } from "./card";
 import { climateComponent } from "./climate";
 import { fansComponent } from "./fans";
 import { headerComponent } from "./header";
@@ -21,4 +22,5 @@ export const COMPONENTS: Record<string, AnyComponent> = {
   attention: attentionComponent as AnyComponent,
   rooms: roomsComponent as AnyComponent,
   climate: climateComponent as AnyComponent,
+  card: cardComponent as AnyComponent,
 };

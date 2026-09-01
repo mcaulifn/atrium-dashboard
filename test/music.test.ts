@@ -26,4 +26,14 @@ describe("music", () => {
     const out = musicComponent.generate(mockCtx(), { mode: "hero", player: "media_player.kitchen" });
     expect(cardsOfType(out.sections, "custom:mass-conductor")[0].player).toBe("media_player.kitchen");
   });
+
+  it("swaps the conductor for a custom card in both the hero and the pop-up", () => {
+    const out = musicComponent.generate(mockCtx(), {
+      mode: "hero",
+      card: { type: "custom:mini-media-player", entity: "media_player.kitchen" },
+    });
+    expect(cardsOfType(out.sections, "custom:mass-conductor")).toHaveLength(0);
+    expect(cardsOfType(out.sections, "custom:mini-media-player")).toHaveLength(1);
+    expect(cardsOfType(out.popups, "custom:mini-media-player")).toHaveLength(1);
+  });
 });

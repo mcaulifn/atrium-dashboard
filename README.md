@@ -39,6 +39,7 @@ usable by id):
 | `rooms` | dynamic room tiles grouped by floor, each showing **temperature + humidity**, a now-playing badge, and a lights badge; taps open a lights pop-up. `All Lights Off` header. `floor` filters to one floor. |
 | `nav` | in-dashboard tab bar (Home + floors) for kiosked tablets, since a hidden header hides the real tabs. Enable with `nav: true`. |
 | `climate` | opt-in per-room temp/humidity strip (rooms tiles already carry these, so it's not in the default views). |
+| `card` | **passthrough** — drop *any* Lovelace card into a view. Escape hatch for anything the built-ins don't cover. |
 
 **Config** (all runtime — change it in the dashboard YAML, no rebuild):
 
@@ -99,6 +100,37 @@ a dashboard's raw config to the `strategy:` block above. Needs HA 2026.5+ and th
 **Per-room temp/humidity** comes from the area's configured
 `temperature_entity_id`/`humidity_entity_id` when set, else the first
 `temperature`/`humidity` `device_class` sensor found in that area.
+
+## Extensibility
+
+None of the built-in components are mandatory — every view is just a list of
+components, and the `card` passthrough places any Lovelace card. Build a screen
+entirely from your own cards if you like:
+
+```yaml
+components:
+  - card: { type: custom:mini-media-player, entity: media_player.kitchen }
+  - card: { type: weather-forecast, entity: weather.home }
+  - card:                      # nested form also works; add grid_options for width
+      type: custom:mushroom-chips-card
+      grid_options: { columns: 6 }
+```
+
+The **music** player is swappable — `custom:mass-conductor` is the default, not a
+requirement. Point it at any media card (it replaces both the hero and the
+now-playing pop-up):
+
+```yaml
+- music: { card: { type: custom:mini-media-player, entity: media_player.living_room } }
+```
+
+### Card dependencies
+
+| Cards | Needed by | Required? |
+|-------|-----------|-----------|
+| `bubble-card` (HACS) | `rooms`, `nav`, `scenes`, `fans`, room/now-playing pop-ups | for the default layout |
+| `mass-conductor` (HACS) | `music` (default) | only if you keep the default player — swap it with `music: { card }` to drop it |
+| `thermostat`, `weather-forecast`, `tile`, `entities`, `markdown` | `house`, `attention`, `header` | built into HA, no install |
 
 > Known follow-up: room-scoped music. `mass-conductor` currently has no config to
 > lock to one player, so room pop-ups show lights only and music lives on the
