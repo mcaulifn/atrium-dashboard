@@ -124,6 +124,26 @@ now-playing pop-up):
 - music: { card: { type: custom:mini-media-player, entity: media_player.living_room } }
 ```
 
+### The overview (Home screen)
+
+The Home screen is **auto-composed**: a **hero** (default: the music player) plus
+a list of **summaries** that each render only when their entities exist — so the
+highlight reflects whatever your home actually has, the same way rooms come from
+the floor registry. Every part is overridable via `overview`:
+
+```yaml
+strategy:
+  type: custom:atrium
+  overview:
+    hero: { music: { card: { type: custom:mass-conductor } } }  # default: music hero
+    exclude: [fans]                 # drop a default summary by id
+    # summaries: [house, attention] # …or replace the whole list
+    # header: false                 # drop the greeting band
+```
+
+Default summaries (in priority order): `house` (thermostat/weather) → `attention`
+→ `scenes` → `fans`. Add future ones (energy, presence, …) here and they slot in.
+
 ### Card dependencies
 
 | Cards | Needed by | Required? |

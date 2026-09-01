@@ -89,11 +89,25 @@ export interface AtriumViewConfig {
   components?: ComponentEntry[];
 }
 
+export interface OverviewConfig {
+  /** the anchor/highlight component (default: music hero). Any component or card. */
+  hero?: ComponentEntry;
+  /** ordered summary list (default: house, attention, scenes, fans). Each is
+   *  presence-gated — it renders nothing when its entities are absent. */
+  summaries?: ComponentEntry[];
+  /** drop summaries by component id from the default without restating the list. */
+  exclude?: string[];
+  /** greeting header: `false` to hide, or header options. */
+  header?: boolean | Record<string, unknown>;
+}
+
 export interface AtriumStrategyConfig {
   /** explicit views; overrides `layout`. Compose components per view yourself. */
   views?: AtriumViewConfig[];
   /** "tabs" (default): Home + one screen per floor. "single": one screen. */
   layout?: "tabs" | "single";
+  /** compose the Home/overview: hero + presence-gated summaries, with overrides. */
+  overview?: OverviewConfig;
   /** prepend an in-dashboard nav bar to every view (for full-kiosk tablets). */
   nav?: boolean;
   /** CSS background applied to every generated view (image, gradient, colour). */

@@ -8,26 +8,20 @@ import type {
   AtriumViewConfig,
   LovelaceCard,
 } from "./types";
+import { overviewComponents } from "./overview";
 import { slug } from "./ui";
 
 // Default when no `views:` are given and `layout: tabs`. Lean and tablet-first:
-// Home = music player + whole-house widgets; each floor with rooms gets its own
-// screen. Every room screen pulls in the shared #now-playing pop-up (mode:
-// popup) so a tile's music badge has somewhere to open.
-function tabViews(ctx: AtriumContext): AtriumViewConfig[] {
+// Home is the auto-overview (hero + presence-gated summaries); each floor with
+// rooms gets its own screen. Every room screen pulls in the shared #now-playing
+// pop-up (mode: popup) so a tile's music badge has somewhere to open.
+function tabViews(ctx: AtriumContext, config: AtriumStrategyConfig): AtriumViewConfig[] {
   const views: AtriumViewConfig[] = [
     {
       title: "Home",
       path: "home",
       icon: "mdi:home",
-      components: [
-        { header: {} },
-        { music: { mode: "hero" } },
-        { house: {} },
-        { scenes: {} },
-        { fans: {} },
-        { attention: {} },
-      ],
+      components: overviewComponents(config),
     },
   ];
 
@@ -55,23 +49,15 @@ function tabViews(ctx: AtriumContext): AtriumViewConfig[] {
   return views;
 }
 
-// Default when `layout: single` — everything on one screen (music + whole-house
-// widgets + all rooms grouped by floor). Dense placement keeps it tidy.
-function singleViews(): AtriumViewConfig[] {
+// Default when `layout: single` — the overview plus all rooms grouped by floor
+// on one screen. Dense placement keeps it tidy.
+function singleViews(config: AtriumStrategyConfig): AtriumViewConfig[] {
   return [
     {
       title: "Home",
       path: "home",
       icon: "mdi:home",
-      components: [
-        { header: {} },
-        { music: { mode: "hero" } },
-        { house: {} },
-        { scenes: {} },
-        { fans: {} },
-        { attention: {} },
-        { rooms: {} },
-      ],
+      components: [...overviewComponents(config), { rooms: {} }],
     },
   ];
 }
@@ -88,8 +74,8 @@ class AtriumStrategy extends HTMLElement {
     const viewConfigs = config.views?.length
       ? config.views
       : config.layout === "single"
-        ? singleViews()
-        : tabViews(ctx);
+        ? singleViews(config)
+        : tabViews(ctx, config);
 
     const views = viewConfigs.map((v) => {
       const sections: LovelaceCard[] = [];
