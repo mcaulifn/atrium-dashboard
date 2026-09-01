@@ -1,78 +1,133 @@
 # Atrium
 
-A component-based Home Assistant **dashboard strategy**. Point it at your house
-and it builds a tablet-friendly dashboard from the HA area/floor/entity
-registries — per-floor room screens, whole-house widgets (thermostat, weather,
-scenes, fans, attention) and a Music Assistant player — with no hand-written
-YAML. All configuration is runtime: switch layout, background, exclusions and
-per-component options from the dashboard YAML, no rebuild.
+A Home Assistant dashboard strategy that generates a tablet-friendly dashboard
+from the floor, area and entity registries: per-floor room screens, whole-house
+widgets (thermostat, weather, scenes, fans, attention) and a Music Assistant
+player, with no hand-written YAML. Adding a floor, area, light or player in HA
+makes it appear on reload.
 
-> Atrium began as a Lovelace replica of a Figma dashboard design (the "Horizon"
-> mockup) and has since become this standalone, self-generating strategy.
+Everything is runtime config. Layout, background, exclusions and per-component
+options come from the dashboard YAML, no rebuild.
 
----
+## Requirements
 
-## How it works
+- Home Assistant 2026.5+
+- [`bubble-card`](https://github.com/Clooos/Bubble-Card) (HACS) for the default layout
+- [`mass-conductor`](https://github.com/mcaulifn/mass-conductor) (HACS) for the default music player
 
-A single custom dashboard **strategy** built from small, dynamic **components**
-instead of hand-authored YAML. It reads the HA
-floor/area/entity registries at load time, so adding a floor/area/light/player
-in HA makes it appear on reload — no edits. Music is the first-class
-`custom:mass-conductor` card (one main player with its own room switcher), not a
-third-party stand-in.
+## Install
 
-**Source:** `src/` (TypeScript) → `dist/atrium.js` (the module HA
-loads). `npm install`, then `npm run build` (or `npm run watch`); `npm run
-typecheck` to check types.
-
-**Components** (`src/components/`, add one to the registry in `index.ts` and it's
-usable by id):
-
-| id | what it renders |
-|------|------------|
-| `header` | greeting/date band. `${greeting}` = time of day, `${user}` resolves per viewer via a `names` map (HA user name/id → display name). |
-| `music` | the `custom:mass-conductor` player. `mode: hero` adds a full card; every mode contributes the shared `#now-playing` pop-up. |
-| `house` | whole-house widgets: auto-detected thermostats + weather, plus any `entities` you list (solar, locks…). Built-in cards, no extra HACS. |
-| `scenes` | scene / script quick-action buttons (dormant until such entities exist). |
-| `fans` | fan tiles with a speed slider (hides `unavailable`). |
-| `attention` | dynamic list of low batteries + tripped problem/smoke/moisture sensors (+ optional unavailable devices). |
-| `rooms` | dynamic room tiles grouped by floor, each showing **temperature + humidity**, a now-playing badge, and a lights badge; taps open a lights pop-up. `All Lights Off` header. `floor` filters to one floor. |
-| `nav` | in-dashboard tab bar (Home + floors) for kiosked tablets, since a hidden header hides the real tabs. Enable with `nav: true`. |
-| `climate` | opt-in per-room temp/humidity strip (rooms tiles already carry these, so it's not in the default views). |
-| `card` | **passthrough** — drop *any* Lovelace card into a view. Escape hatch for anything the built-ins don't cover. |
-
-**Config** (all runtime — change it in the dashboard YAML, no rebuild):
+1. Copy `dist/atrium.js` to `<config>/www/`.
+2. Add `/local/atrium.js` as a JavaScript-module dashboard **Resource**.
+3. Set the dashboard's raw config to:
 
 ```yaml
 strategy:
   type: custom:atrium
-  layout: tabs                 # "tabs" (default): Home + a screen per floor.
-                               # "single": everything on one screen.
-  nav: true                    # in-dashboard tab bar on every view — use with
-                               # full kiosk (hidden header hides the real tabs)
-  background: "center / cover no-repeat url('/local/atrium-bg.jpg')"  # optional
-  exclude_areas: [House]       # drop junk/system areas by name or area_id
-  component_options:           # tweak a built-in view's component without writing views:
-    header:
-      names: { Tablet: "McAuliffe Family" }
-  kiosk: true                  # optional: hide HA header + sidebar (needs kiosk-mode)
 ```
 
-> **Editing with kiosk on:** `kiosk: true` hides the header for *everyone*, so to
-> reach the raw-config editor append `?disable_km` to the dashboard URL (restores
-> the chrome for that session). Better: scope kiosk so admins keep the chrome —
-> pass a kiosk-mode config object instead of `true`:
->
-> ```yaml
-> kiosk:
->   non_admin_settings:      # only non-admin users (e.g. the wall tablet) get kiosked
->     hide_header: true
->     hide_sidebar: true
-> ```
+That is the whole configuration. Everything below is optional.
 
-Omit `layout`/`views` for the default. For full control, author `views:`
-yourself — each view lists components with per-component options; `layout` is
-just the zero-config default:
+## Strategy options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `layout` | `tabs` \| `single` | `tabs` | `tabs`: Home plus one screen per floor. `single`: everything on one screen. |
+| `views` | list | — | Explicit views. Overrides `layout`. See [Views](#views). |
+| `overview` | map | — | Composition of the Home screen. See [Overview](#overview). |
+| `nav` | bool | `false` | Prepend an in-dashboard tab bar to every view, for kiosked tablets whose hidden header also hides the real tabs. |
+| `background` | string | — | CSS background applied to every view, e.g. `"center / cover no-repeat url('/local/atrium-bg.jpg')"`. |
+| `exclude_areas` | list | — | Areas to omit entirely, by `area_id` or name. |
+| `component_options` | map | — | Options merged into every component of that id in the built-in views. Per-view options win. |
+| `kiosk` | bool \| map | `false` | Hide the HA header and sidebar. Needs the kiosk-mode plugin. See [Kiosk](#kiosk). |
+
+## Components
+
+Each view is a list of components. They live in `src/components/`; add one to
+the registry in `index.ts` and it is usable by id.
+
+| id | Renders |
+|----|---------|
+| `header` | Greeting and date band. |
+| `music` | The music player, plus the shared `#now-playing` pop-up. |
+| `house` | Auto-detected thermostats and weather, plus any extra entities. |
+| `scenes` | Scene and script quick-action buttons. Renders nothing until such entities exist. |
+| `fans` | Fan tiles with a speed slider. |
+| `attention` | Low batteries and tripped problem, smoke or moisture sensors. |
+| `rooms` | Room tiles grouped by floor: temperature, humidity, now-playing and lights badges. Taps open a lights pop-up. |
+| `nav` | Tab bar (Home plus floors) for kiosked tablets. |
+| `climate` | Per-room temperature and humidity strip. Opt-in; room tiles already carry both. |
+| `card` | Passthrough for any Lovelace card. |
+
+### Component options
+
+| Component | Option | Type | Default | Description |
+|-----------|--------|------|---------|-------------|
+| `header` | `greeting` | string | `"${greeting}, ${user}"` | `${greeting}` is the time of day, `${user}` the resolved viewer name. |
+| | `name` | string | — | Flat override for `${user}`: the same name for everyone. |
+| | `names` | map | — | Per-viewer names keyed by HA user name or id, e.g. `{ Tablet: "Everyone" }`. |
+| | `default_name` | string | HA user's name | Fallback when neither `names` nor `name` applies. |
+| | `show_date` | bool | `true` | Show today's date under the greeting. |
+| | `column_span` | number | `3` | Columns to span. |
+| `music` | `mode` | `hero` \| `popup` | `hero` | `hero` adds a full player card. Both modes add the pop-up. |
+| | `card` | card config | `custom:mass-conductor` | Override the player card. Replaces both the hero and the pop-up. |
+| | `player` | entity_id | — | Passed through to the card, if it supports one. |
+| | `header` | bool | `false` | Show the section header. |
+| | `title` | string | `"Music"` | Header text. |
+| | `column_span` | number | `1` | Columns the hero spans. |
+| `house` | `climate` | list | all `climate.*` | Climate entities to show. |
+| | `weather` | entity_id \| `false` | first `weather.*` | Weather entity, or `false` to hide. |
+| | `entities` | list | — | Extra entities rendered as tiles, e.g. solar, alarm, locks. |
+| | `include_unavailable` | bool | `false` | Include `unavailable` climate entities. |
+| `scenes` | `entities` | list | all `scene.*` | Entities to show. |
+| | `include_scripts` | bool | `false` | Also include `script.*` as quick actions. |
+| | `header` | bool | `true` | Show the section header. |
+| | `title` | string | `"Scenes"` | Header text. |
+| `fans` | `entities` | list | all `fan.*` | Entities to show. |
+| | `include_unavailable` | bool | `false` | Include `unavailable` fans. |
+| | `header` | bool | `true` | Show the section header. |
+| | `title` | string | `"Fans"` | Header text. |
+| `attention` | `battery_threshold` | number | `20` | Flag battery sensors at or below this percent. |
+| | `include_unavailable` | bool | `false` | Also flag unavailable controllable entities. Noisy. |
+| | `exclude` | list | — | Entity ids to never flag. |
+| | `header` | bool | `true` | Show the section header. |
+| | `title` | string | `"Needs attention"` | Header text. |
+| `rooms` | `group_by` | `floor` \| `none` | `floor` | `floor` groups tiles under floor headers, `none` is one grid. |
+| | `floor` | floor_id | — | Render only this floor's rooms. `__orphans__` for rooms with no floor. |
+| | `all_lights_off` | bool | `true` | Prepend an "All Lights Off" button. |
+| `nav` | `items` | list | Home plus each floor | Explicit entries of `{ title, path, icon }`. |
+| | `columns` | number | `6` | Grid width per button out of 12. Lower is narrower and fits more per row. |
+| `climate` | `title` | string | `"Climate"` | Header text. |
+| `card` | `card` | card config | — | Any Lovelace card. The card's fields may also be passed directly. |
+
+Per-room temperature and humidity come from the area's configured
+`temperature_entity_id` and `humidity_entity_id` when set, otherwise from the
+first `temperature` or `humidity` `device_class` sensor in that area.
+
+## Overview
+
+The Home screen is a hero plus a list of summaries, each of which renders only
+when its entities exist.
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `hero` | component entry | `music` hero | The anchor component. Any component or card. |
+| `summaries` | list | `house`, `attention`, `scenes`, `fans` | Ordered summary list, replacing the default. |
+| `exclude` | list | — | Drop summaries by component id without restating the list. |
+| `header` | bool \| map | `true` | `false` hides the greeting band; a map passes `header` options. |
+
+```yaml
+strategy:
+  type: custom:atrium
+  overview:
+    exclude: [fans]
+    hero: { music: { card: { type: custom:mini-media-player } } }
+```
+
+## Views
+
+Author `views:` for full control. Each view takes `title`, `path`, `icon`,
+`max_columns` and a list of `components`:
 
 ```yaml
 strategy:
@@ -80,79 +135,65 @@ strategy:
   views:
     - title: Home
       components:
-        - header:                               # greeting resolves per viewer
-            greeting: "${greeting}, ${user}"    # ${greeting}=time of day
-            names: { Tablet: "Everyone" }       # HA user name/id -> display name
-            default_name: "there"
-        - music: { mode: hero, header: true }   # music header is off by default
+        - header: { names: { Tablet: "Everyone" } }
+        - music: { mode: hero }
         - house: { entities: [sensor.energy_production_today] }
     - title: Rooms
       components:
-        - rooms: {}                             # all floors, grouped
+        - rooms: {}
         - music: { mode: popup }
 ```
 
-**Install:** copy `dist/atrium.js` to `<config>/www/`, add it as a
-JavaScript-module dashboard **Resource** (`/local/atrium.js`), then set
-a dashboard's raw config to the `strategy:` block above. Needs HA 2026.5+ and the
-`bubble-card` + `mass-conductor` cards.
+A component with no options can be written as a bare string: `- rooms`.
 
-**Per-room temp/humidity** comes from the area's configured
-`temperature_entity_id`/`humidity_entity_id` when set, else the first
-`temperature`/`humidity` `device_class` sensor found in that area.
+## Kiosk
+
+`kiosk: true` hides the header and sidebar for everyone. To reach the raw-config
+editor, append `?disable_km` to the dashboard URL. To keep the chrome for
+admins, pass a kiosk-mode config object instead:
+
+```yaml
+strategy:
+  type: custom:atrium
+  kiosk:
+    non_admin_settings:
+      hide_header: true
+      hide_sidebar: true
+```
 
 ## Extensibility
 
-None of the built-in components are mandatory — every view is just a list of
-components, and the `card` passthrough places any Lovelace card. Build a screen
-entirely from your own cards if you like:
+No built-in component is mandatory. A view is a list of components, and `card`
+places any Lovelace card, so a screen can be built entirely from your own:
 
 ```yaml
 components:
   - card: { type: custom:mini-media-player, entity: media_player.kitchen }
   - card: { type: weather-forecast, entity: weather.home }
-  - card:                      # nested form also works; add grid_options for width
+  - card:
       type: custom:mushroom-chips-card
       grid_options: { columns: 6 }
 ```
-
-The **music** player is swappable — `custom:mass-conductor` is the default, not a
-requirement. Point it at any media card (it replaces both the hero and the
-now-playing pop-up):
-
-```yaml
-- music: { card: { type: custom:mini-media-player, entity: media_player.living_room } }
-```
-
-### The overview (Home screen)
-
-The Home screen is **auto-composed**: a **hero** (default: the music player) plus
-a list of **summaries** that each render only when their entities exist — so the
-highlight reflects whatever your home actually has, the same way rooms come from
-the floor registry. Every part is overridable via `overview`:
-
-```yaml
-strategy:
-  type: custom:atrium
-  overview:
-    hero: { music: { card: { type: custom:mass-conductor } } }  # default: music hero
-    exclude: [fans]                 # drop a default summary by id
-    # summaries: [house, attention] # …or replace the whole list
-    # header: false                 # drop the greeting band
-```
-
-Default summaries (in priority order): `house` (thermostat/weather) → `attention`
-→ `scenes` → `fans`. Add future ones (energy, presence, …) here and they slot in.
 
 ### Card dependencies
 
 | Cards | Needed by | Required? |
 |-------|-----------|-----------|
-| `bubble-card` (HACS) | `rooms`, `nav`, `scenes`, `fans`, room/now-playing pop-ups | for the default layout |
-| `mass-conductor` (HACS) | `music` (default) | only if you keep the default player — swap it with `music: { card }` to drop it |
-| `thermostat`, `weather-forecast`, `tile`, `entities`, `markdown` | `house`, `attention`, `header` | built into HA, no install |
+| `bubble-card` (HACS) | `rooms`, `nav`, `scenes`, `fans`, room and now-playing pop-ups | For the default layout |
+| `mass-conductor` (HACS) | `music` | Only with the default player. Swap it via `music: { card }` |
+| `thermostat`, `weather-forecast`, `tile`, `entities`, `markdown` | `house`, `attention`, `header` | Built into HA |
 
-> Known follow-up: room-scoped music. `mass-conductor` currently has no config to
-> lock to one player, so room pop-ups show lights only and music lives on the
-> hero + shared now-playing surface. Add a `player` option to the card to enable
-> per-room scoped playback.
+## Development
+
+```bash
+npm install
+npm run build      # dist/atrium.js
+npm run watch
+npm run typecheck
+npm test
+```
+
+## Known limitations
+
+`mass-conductor` has no option to lock to a single player, so room pop-ups show
+lights only and music lives on the hero and the shared now-playing surface.
