@@ -14,6 +14,7 @@ options come from the dashboard YAML, no rebuild.
 - Home Assistant 2026.5+
 - [`bubble-card`](https://github.com/Clooos/Bubble-Card) (HACS) for the default layout
 - [`mass-conductor`](https://github.com/mcaulifn/mass-conductor) (HACS) for the default music player
+- [`kiosk-mode`](https://github.com/NemesisRE/kiosk-mode) (HACS) only if you set `kiosk:`
 
 ## Install
 
@@ -148,9 +149,14 @@ A component with no options can be written as a bare string: `- rooms`.
 
 ## Kiosk
 
-`kiosk: true` hides the header and sidebar for everyone. To reach the raw-config
-editor, append `?disable_km` to the dashboard URL. To keep the chrome for
-admins, pass a kiosk-mode config object instead:
+Hiding the header and sidebar is done by the
+[kiosk-mode](https://github.com/NemesisRE/kiosk-mode) plugin, which must be
+installed from HACS **and added as a dashboard resource**. Atrium only passes
+your `kiosk:` value through to it as the dashboard's `kiosk_mode` config.
+
+`kiosk: true` is shorthand for hiding both for everyone. Any object is handed to
+kiosk-mode untouched, so all of its own scoping works. To keep the chrome for
+admins and kiosk only the tablet:
 
 ```yaml
 strategy:
@@ -160,6 +166,23 @@ strategy:
       hide_header: true
       hide_sidebar: true
 ```
+
+To reach the raw-config editor while kiosked, append `?disable_km` to the
+dashboard URL.
+
+**Nothing hidden?** Atrium logs a warning to the browser console when `kiosk:`
+is set but the plugin is not detected. Add `debug: true` alongside your kiosk
+settings and kiosk-mode will log the config it received:
+
+```yaml
+  kiosk:
+    debug: true
+    non_admin_settings: { hide_header: true, hide_sidebar: true }
+```
+
+If no kiosk-mode output appears at all, the plugin is not loaded. If it logs a
+config but nothing hides, check which account you are viewing with:
+`non_admin_settings` is ignored for admins, who keep the chrome by design.
 
 ## Extensibility
 
