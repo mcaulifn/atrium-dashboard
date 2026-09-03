@@ -1,6 +1,6 @@
 {
   "name": "atrium-dashboard",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Atrium — a component-based Home Assistant dashboard strategy. Composes rooms, music (Music Assistant Conductor), whole-house widgets and per-floor tabs dynamically from the HA area/floor/entity registries.",
   "type": "module",
   "scripts": {
