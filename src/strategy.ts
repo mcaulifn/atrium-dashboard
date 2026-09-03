@@ -15,7 +15,10 @@ import { slug } from "./ui";
 // Home is the auto-overview (hero + presence-gated summaries); each floor with
 // rooms gets its own screen. Every room screen pulls in the shared #now-playing
 // pop-up (mode: popup) so a tile's music badge has somewhere to open.
-function tabViews(ctx: AtriumContext, config: AtriumStrategyConfig): AtriumViewConfig[] {
+function tabViews(
+  ctx: AtriumContext,
+  config: AtriumStrategyConfig,
+): AtriumViewConfig[] {
   const views: AtriumViewConfig[] = [
     {
       title: "Home",
@@ -25,7 +28,9 @@ function tabViews(ctx: AtriumContext, config: AtriumStrategyConfig): AtriumViewC
     },
   ];
 
-  const floorsSorted = [...ctx.floors].sort((x, y) => (x.level ?? 0) - (y.level ?? 0));
+  const floorsSorted = [...ctx.floors].sort(
+    (x, y) => (x.level ?? 0) - (y.level ?? 0),
+  );
   const floorIds = new Set(ctx.floors.map((f) => f.floor_id));
   for (const f of floorsSorted) {
     if (!ctx.rooms.some((a) => a.floor_id === f.floor_id)) continue;
@@ -33,7 +38,10 @@ function tabViews(ctx: AtriumContext, config: AtriumStrategyConfig): AtriumViewC
       title: f.name,
       path: slug(f.name),
       icon: f.icon || "mdi:floor-plan",
-      components: [{ rooms: { floor: f.floor_id } }, { music: { mode: "popup" } }],
+      components: [
+        { rooms: { floor: f.floor_id } },
+        { music: { mode: "popup" } },
+      ],
     });
   }
 
@@ -42,7 +50,10 @@ function tabViews(ctx: AtriumContext, config: AtriumStrategyConfig): AtriumViewC
       title: "Other",
       path: "other",
       icon: "mdi:home-outline",
-      components: [{ rooms: { floor: "__orphans__" } }, { music: { mode: "popup" } }],
+      components: [
+        { rooms: { floor: "__orphans__" } },
+        { music: { mode: "popup" } },
+      ],
     });
   }
 
@@ -62,10 +73,45 @@ function singleViews(config: AtriumStrategyConfig): AtriumViewConfig[] {
   ];
 }
 
-function normalize(entry: ComponentEntry): { id: string; options: Record<string, unknown> } {
+function normalize(entry: ComponentEntry): {
+  id: string;
+  options: Record<string, unknown>;
+} {
   if (typeof entry === "string") return { id: entry, options: {} };
   const id = Object.keys(entry)[0];
   return { id, options: entry[id] ?? {} };
+}
+
+// kiosk-mode is a separate plugin (HACS). Atrium only emits the `kiosk_mode`
+// key it reads; `true` is shorthand for hiding both chrome elements, and any
+// object is passed through so its own scoping (non_admin_settings, user_settings,
+// mobile_settings, debug) works unchanged.
+export function kioskMode(
+  kiosk: AtriumStrategyConfig["kiosk"],
+): Record<string, unknown> | undefined {
+  if (!kiosk) return undefined;
+  return kiosk === true ? { hide_header: true, hide_sidebar: true } : kiosk;
+}
+
+// Without the plugin installed, `kiosk:` is inert and the header/sidebar simply
+// stay visible with no error anywhere — the one failure mode a user cannot see.
+// kiosk-mode publishes itself as window.KioskMode; give resources time to load
+// before deciding it is absent.
+const KIOSK_PLUGIN_GRACE_MS = 5000;
+
+interface KioskModeWindow extends Window {
+  KioskMode?: unknown;
+}
+
+function warnIfKioskPluginMissing(): void {
+  window.setTimeout(() => {
+    if ((window as KioskModeWindow).KioskMode) return;
+    console.warn(
+      "[atrium] `kiosk:` is set but the kiosk-mode plugin was not detected. " +
+        "Install kiosk-mode (HACS) and add it as a dashboard resource, or the " +
+        "header and sidebar stay visible. https://github.com/NemesisRE/kiosk-mode",
+    );
+  }, KIOSK_PLUGIN_GRACE_MS);
 }
 
 class AtriumStrategy extends HTMLElement {
@@ -96,7 +142,10 @@ class AtriumStrategy extends HTMLElement {
         // Merge any strategy-level defaults for this component id under the
         // per-view options (per-view wins), so `component_options` can tweak the
         // built-in views without hand-writing `views:`.
-        const merged = { ...(config.component_options?.[id] ?? {}), ...options };
+        const merged = {
+          ...(config.component_options?.[id] ?? {}),
+          ...options,
+        };
         // A broken component must never take the whole dashboard down with it.
         try {
           const out = component.generate(ctx, merged);
@@ -123,14 +172,12 @@ class AtriumStrategy extends HTMLElement {
       };
     });
 
+    const kiosk_mode = kioskMode(config.kiosk);
+    if (kiosk_mode) warnIfKioskPluginMissing();
+
     return {
       title: "Atrium",
-      ...(config.kiosk
-        ? {
-            kiosk_mode:
-              config.kiosk === true ? { hide_header: true, hide_sidebar: true } : config.kiosk,
-          }
-        : {}),
+      ...(kiosk_mode ? { kiosk_mode } : {}),
       views,
     };
   }
