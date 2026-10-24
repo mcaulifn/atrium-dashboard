@@ -1,4 +1,5 @@
 import type { ComponentOutput, AtriumComponent, LovelaceCard } from "../types";
+import { spanSection } from "../ui";
 
 interface HeaderOptions {
   /** greeting text; `${greeting}` -> time-of-day, `${user}` -> resolved name. */
@@ -49,6 +50,6 @@ export const headerComponent: AtriumComponent<HeaderOptions> = {
     });
     const content = options.show_date === false ? `# ${text}` : `# ${text}\n${date}`;
     const card: LovelaceCard = { type: "markdown", content };
-    return { sections: [{ type: "grid", column_span: options.column_span ?? 3, cards: [card] }] };
+    return { sections: [spanSection([card], options.column_span ?? 3)] };
   },
 };

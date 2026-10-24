@@ -34,4 +34,10 @@ describe("header", () => {
     const out = headerComponent.generate(mockCtx({ user: { name: "A" } }), { show_date: false });
     expect(greeting(out).split("\n").length).toBe(1);
   });
+
+  it("spans the full width by default, with the markdown stretched to fill it", () => {
+    const out = headerComponent.generate(mockCtx({ user: { name: "A" } }), {});
+    expect(out.sections?.[0].column_span).toBe(3);
+    expect(cardsOfType(out.sections, "markdown")[0].grid_options).toEqual({ columns: "full" });
+  });
 });

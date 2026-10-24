@@ -36,4 +36,11 @@ describe("music", () => {
     expect(cardsOfType(out.sections, "custom:mini-media-player")).toHaveLength(1);
     expect(cardsOfType(out.popups, "custom:mini-media-player")).toHaveLength(1);
   });
+
+  it("a wide hero stretches the default player and header across the span", () => {
+    const out = musicComponent.generate(mockCtx(), { mode: "hero", header: true, column_span: 2 });
+    expect(out.sections?.[0].column_span).toBe(2);
+    expect(cardsOfType(out.sections, "custom:mass-conductor")[0].grid_options).toEqual({ columns: "full" });
+    expect(cardsOfType(out.sections, "custom:bubble-card")[0].grid_options).toEqual({ columns: "full" });
+  });
 });

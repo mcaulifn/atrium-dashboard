@@ -1,5 +1,5 @@
 import type { ComponentOutput, AtriumComponent, LovelaceCard } from "../types";
-import { sep } from "../ui";
+import { sep, spanSection } from "../ui";
 
 interface MusicOptions {
   /** "hero" adds a full player card to the view; both modes add the pop-up. */
@@ -31,16 +31,17 @@ export const musicComponent: AtriumComponent<MusicOptions> = {
     const mode = options.mode ?? "hero";
     const playerCard = (): LovelaceCard =>
       options.card ? { ...options.card } : conductor(options.player);
-    // Header + player as one single-column section so they stack together. We
-    // don't widen it: a card can't span past one view-column, so a wider
-    // section just lays the header beside the player. Horizontal space is
-    // filled by dense section placement pulling the room grids up alongside.
+    // Header + player as one section so they stack together. With a span > 1
+    // the default cards stretch to the section's full width (a user-supplied
+    // card keeps its own grid_options); otherwise dense section placement fills
+    // the remaining columns with the room grids.
     const span = options.column_span ?? 1;
+    const wide = (c: LovelaceCard): LovelaceCard =>
+      span > 1 ? { ...c, grid_options: { columns: "full" } } : c;
     const cards: LovelaceCard[] = [];
-    if (options.header) cards.push(sep(options.title ?? "Music", "mdi:music"));
-    cards.push(playerCard());
-    const sections: LovelaceCard[] =
-      mode === "hero" ? [{ type: "grid", ...(span > 1 ? { column_span: span } : {}), cards }] : [];
+    if (options.header) cards.push(wide(sep(options.title ?? "Music", "mdi:music")));
+    cards.push(options.card ? playerCard() : wide(playerCard()));
+    const sections: LovelaceCard[] = mode === "hero" ? [spanSection(cards, span)] : [];
     const popups: LovelaceCard[] = [
       {
         type: "custom:bubble-card",
