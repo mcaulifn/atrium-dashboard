@@ -100,6 +100,7 @@ the registry in `index.ts` and it is usable by id.
 | | `columns` | number | `6` | Grid width per button out of 12. Lower is narrower and fits more per row. |
 | `climate` | `title` | string | `"Climate"` | Header text. |
 | `card` | `card` | card config | — | Any Lovelace card. The card's fields may also be passed directly. |
+| | `column_span` | number | `1` | Columns to span. The card fills the span unless it sets its own `grid_options.columns`. |
 
 Per-room temperature and humidity come from the area's configured
 `temperature_entity_id` and `humidity_entity_id` when set, otherwise from the
