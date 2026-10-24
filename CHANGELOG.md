@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/mcaulifn/atrium-dashboard/compare/v0.2.1...v0.2.2) (2026-10-24)
+
+
+### Bug Fixes
+
+* make column_span actually widen header, music hero and card ([#15](https://github.com/mcaulifn/atrium-dashboard/issues/15)) ([8987e0a](https://github.com/mcaulifn/atrium-dashboard/commit/8987e0a89666896485c827c1fe2ce045b7b0f8d3))
+
 ## [0.2.1](https://github.com/mcaulifn/atrium-dashboard/compare/v0.2.0...v0.2.1) (2026-09-03)
 
 
